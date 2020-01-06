@@ -43,7 +43,7 @@
 
    </style>
 
-   <body onload="startVideo()">
+   <body onload="startRoom()">
 
    <div id = "loginPage" class = "container text-center">
 
@@ -54,7 +54,7 @@
           </div>
          <div class = "col-md-4 col-md-offset-4">
 
-            <h2>WebRTC Video Demo. Please sign in</h2>
+            <h2 id = "topic">WebRTC Video Demo. Please sign in</h2>
             <label for = "usernameInput" class = "sr-only">Login</label>
             <input type = "email" id = "usernameInput" c
                lass = "form-control formgroup" placeholder = "Login"
@@ -70,6 +70,7 @@
    <div id = "callPage" class = "call-page">
       <div class = "row text-center">
          <video id = "localVideo" autoplay></video>
+         <h3 id = "localName">localName</h3>
          <div class = "col-md-12">
             <video id = "remoteVideo" autoplay></video>
             <h3 id = "remoteName">remoteName1</h3>
@@ -94,7 +95,6 @@
 
    </div>
 
-   <script src = "client.js"></script>
    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.4.0/adapter.min.js" ></script>
    <script type="text/javascript" src="janus.js" ></script>
    <script type="text/javascript" src="videoConf.js"></script>
