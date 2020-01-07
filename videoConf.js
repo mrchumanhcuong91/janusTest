@@ -39,6 +39,8 @@ var myroom = 1234;
 var myusername = null;
 var onetime = false;
 var previousName = null;
+var listUser =[];
+var itemUsr = {};
 var roomId;
 function startRoom(){
     createRoom.style.display ="none";
@@ -95,6 +97,7 @@ function startRoom(){
                                             var pubId = publishers[i]["id"];
                                             var pubDisplay = publishers[i]["display"];
                                             console.log("name of attenndees : "+ pubDisplay +"pubid "+pubId);
+                                            addUserToList(pubDisplay, pubId);
                                             handleEachUserComming(roomId, pubId, pubDisplay);
 
                                         }
@@ -125,6 +128,8 @@ function startRoom(){
                                             var uId = users[f]["id"];
                                             var display = users[f]["display"];
                                             console.log("uId " + uId + "display "+ display);
+                                            addUserToList(display, uId);
+
                                             handleEachUserComming(roomId, uId, pubDisplay);
 
                                         }
@@ -219,6 +224,29 @@ function handleMyPublisher(useAudio){
 
     });
 }
+addUserToList=(name, id)=>{
+    //check exist
+    for(var item in listUser){
+        if(item.id !==  null && item.id ===id)
+            return;
+    }
+    console.log("add name "+ name + "id "+ id);
+    itemUsr.name = name;
+    itemUsr.id = id;
+    itemUsr.pos = count;
+    listUser.push(itemUsr);
+    count++;
+}
+getCount =(name, id)=>{
+    console.log("checking id "+id + "type " +typeof id);
+    console.log("lenght listUser "+ listUser.length);
+
+    var resultObj = listUser.filter(function(o){
+        return o.id == id;
+    })[0];
+    return resultObj;
+}
+
 function handleEachUserComming(roomId, userId, nameDisplay){
     //need create new connection
     janus.attach({
@@ -288,24 +316,22 @@ function handleEachUserComming(roomId, userId, nameDisplay){
 //                        if(previousName === null){
 //                            previousName = nameDisplay;
 //                        }
-                        console.log("onremotestream name previousName "+ previousName +" -- "+ nameDisplay +"count "+count);
-                        if(previousName !== nameDisplay){
-
-
-                            count++;
-                            previousName = nameDisplay;
-                            switch(count){
+                        console.log("onremotestream name nameDisplay "+ nameDisplay +"id "+userId);
+                        if(1){
+                            var user =getCount(nameDisplay, userId);
+                            console.log("onremotestream pos "+ user.pos);
+                            switch(user.pos){
                             case 1:
                                 Janus.attachMediaStream(remoteVideo1, remotestream);
-                                remoteName1.innerHTML = nameDisplay;
+                                remoteName1.innerHTML = user.name;
                                 break;
                             case 2:
                                 Janus.attachMediaStream(remoteVideo2, remotestream);
-                                remoteName2.innerHTML = nameDisplay;
+                                remoteName2.innerHTML = user.name;
                                 break;
                             case 3:
                                 Janus.attachMediaStream(remoteVideo3, remotestream);
-                                remoteName3.innerHTML = nameDisplay;
+                                remoteName3.innerHTML = user.name;
                                 break;
                             default:
                                 break;
