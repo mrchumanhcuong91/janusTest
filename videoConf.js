@@ -7,7 +7,7 @@ var localVideo = document.querySelector('#localVideo');
 var localName = document.querySelector('#localName');
 var remoteVideo = document.querySelector('#remoteVideo');
 var remoteName = document.querySelector('#remoteName');
-
+var leaveBtn = document.querySelector('#leaveBtn');
 //room names
 var roomName = document.querySelector('#roomname');
 var createRoom = document.querySelector('#createroom');
@@ -32,15 +32,15 @@ var callPage = document.querySelector('#callPage');
 var topic = document.querySelector('#topic');
 var janus = null;
 var jUser = null;
-var server = "http://"+"192.168.12.53"+":8088/janus";
+var server = "http://"+"192.168.0.99"+":8088/janus";
 
-var videoRoom, remoteUser ;
+var videoRoom ;
 var myroom = 1234;
 var myusername = null;
 var onetime = false;
 var previousName = null;
 var listUser =[];
-var itemUsr = {};
+var feeds = [];
 var roomId;
 function startRoom(){
     createRoom.style.display ="none";
@@ -127,12 +127,30 @@ function startRoom(){
                                         for(var f in users){
                                             var uId = users[f]["id"];
                                             var display = users[f]["display"];
-                                            console.log("uId " + uId + "display "+ display);
                                             addUserToList(display, uId);
 
                                             handleEachUserComming(roomId, uId, pubDisplay);
 
                                         }
+                                    }
+                                    var unPublish = message["unpublished"];
+                                    if(unPublish !== undefined && unPublish !== null && unPublish === "ok"){
+                                        videoRoom.hangup();
+                                        //detach all Feeds
+                                        janus.destroy();
+                                        return;
+                                    }
+                                    var rmFeed = null;
+                                    for(var i = 0; i< 6; i++){
+                                        var item = feeds[i];
+                                        if(item !== null && item !== undefined && item.uId === unPublish){
+                                            rmFeed = item;
+                                            break;
+                                        }
+                                    }
+                                    if( rmFeed !== null){
+                                        feeds[rmFeed.index] = null;
+                                        rmFeed.detach();
                                     }
 
                                     break;
@@ -171,7 +189,7 @@ function startRoom(){
 //create room
 createRoom.addEventListener("click", function(event){
     var name = roomName.value;
-    console.log("type of name "+ typeof myroom);
+
     if(videoRoom !== null && videoRoom !== undefined){
         Janus.log("Plugin attached! (" + videoRoom.getPlugin() + ", id=" + videoRoom.getId() + ")");
         Janus.log("  -- This is a publisher/manager");
@@ -230,7 +248,8 @@ addUserToList=(name, id)=>{
         if(item.id !==  null && item.id ===id)
             return;
     }
-    console.log("add name "+ name + "id "+ id);
+    var itemUsr = {};
+
     itemUsr.name = name;
     itemUsr.id = id;
     itemUsr.pos = count;
@@ -238,22 +257,28 @@ addUserToList=(name, id)=>{
     count++;
 }
 getCount =(name, id)=>{
-    console.log("checking id "+id + "type " +typeof id);
-    console.log("lenght listUser "+ listUser.length);
+    var object = null;
+    listUser.forEach((value, index, array)=>{
+                        console.log("List name "+value.name + " id "+ value.id);
+                        if(value.id !== undefined && value.id === id){
+                            console.log("Found name "+value.name);
+                            object = value;
+                         }
 
-    var resultObj = listUser.filter(function(o){
-        return o.id == id;
-    })[0];
-    return resultObj;
+                     });
+    return object;
 }
 
 function handleEachUserComming(roomId, userId, nameDisplay){
     //need create new connection
+    var remoteUser = null;
     janus.attach({
                     plugin: "janus.plugin.videoroom",
                     opequeId: opaqueId,
                     success: function(newHandleRemote){
                         remoteUser = newHandleRemote;
+                        remoteUser.uId = userId;
+                        remoteUser.uDisplay = nameDisplay;
                         if(remoteUser !== null && remoteUser !== undefined){
                             //send attach
                             var body = {
@@ -265,6 +290,13 @@ function handleEachUserComming(roomId, userId, nameDisplay){
                                 };
                             console.log("Roomid "+ roomId + "feed "+userId);
                             remoteUser.send({"message": body});
+                        }
+                        for(var i =0; i < 6; i++){
+                            if(feeds[i] !== undefined && feeds[i] !== null){
+                                feeds[i] = remoteUser;
+                                remoteUser.index = i;
+                                break;
+                            }
                         }
                     },
                     error: function(err){
@@ -300,7 +332,7 @@ function handleEachUserComming(roomId, userId, nameDisplay){
                                                     console.log("Create answer failed "+ err);
                                                 }
 
-                                });
+                                            });
                             }
                             break;
 
@@ -316,10 +348,12 @@ function handleEachUserComming(roomId, userId, nameDisplay){
 //                        if(previousName === null){
 //                            previousName = nameDisplay;
 //                        }
-                        console.log("onremotestream name nameDisplay "+ nameDisplay +"id "+userId);
                         if(1){
                             var user =getCount(nameDisplay, userId);
-                            console.log("onremotestream pos "+ user.pos);
+                            if(user === null){
+                                console.log("onremotestream user null");
+                                return;
+                            }
                             switch(user.pos){
                             case 1:
                                 Janus.attachMediaStream(remoteVideo1, remotestream);
@@ -344,4 +378,11 @@ function handleEachUserComming(roomId, userId, nameDisplay){
                     }
 
                  });
+
 }
+leaveBtn.addEventListener
+        ("click",(event)=>{
+          var body ={"request": "unpublish"};
+          videoRoom.send({"message": body});
+
+        });
